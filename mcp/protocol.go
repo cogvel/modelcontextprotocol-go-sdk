@@ -1071,6 +1071,29 @@ type ListPromptsParams struct {
 	Cursor string `json:"cursor,omitempty"`
 }
 
+type DiscoverParams struct {
+	Meta `json:"_meta,omitempty"`
+}
+
+func (x *DiscoverParams) isParams()              {}
+func (x *DiscoverParams) isNil() bool            { return x == nil }
+func (x *DiscoverParams) GetProgressToken() any  { return getProgressToken(x) }
+func (x *DiscoverParams) SetProgressToken(t any) { setProgressToken(x, t) }
+
+type DiscoverResult struct {
+	Meta `json:"_meta,omitempty"`
+	// The versions of the Model Context Protocol that the server supports.
+	SupportedVersions []string `json:"supportedVersions"`
+	// The server's capabilities.
+	Capabilities *ServerCapabilities `json:"capabilities"`
+	// Information about the server implementation.
+	ServerInfo *Implementation `json:"serverInfo"`
+	// Instructions describing how to use the server and its features.
+	Instructions string `json:"instructions,omitempty"`
+}
+
+func (*DiscoverResult) isResult() {}
+
 func (x *ListPromptsParams) isParams()              {}
 func (x *ListPromptsParams) isNil() bool            { return x == nil }
 func (x *ListPromptsParams) GetProgressToken() any  { return getProgressToken(x) }
@@ -1935,16 +1958,18 @@ type ElicitationCompleteParams struct {
 func (x *ElicitationCompleteParams) isParams()   {}
 func (x *ElicitationCompleteParams) isNil() bool { return x == nil }
 
-// An Implementation describes the name and version of an MCP implementation, with an optional
-// title for UI representation.
+// An Implementation describes the name and version of an MCP implementation, with
+// optional display metadata.
 type Implementation struct {
 	// Intended for programmatic or logical use, but used as a display name in past
 	// specs or fallback (if title isn't present).
 	Name string `json:"name"`
 	// Intended for UI and end-user contexts — optimized to be human-readable and
 	// easily understood, even by those unfamiliar with domain-specific terminology.
-	Title   string `json:"title,omitempty"`
-	Version string `json:"version"`
+	Title string `json:"title,omitempty"`
+	// A human-readable description of the implementation.
+	Description string `json:"description,omitempty"`
+	Version     string `json:"version"`
 	// WebsiteURL for the server, if any.
 	WebsiteURL string `json:"websiteUrl,omitempty"`
 	// Icons for the Server, if any.
@@ -2039,6 +2064,7 @@ const (
 	methodCallTool                  = "tools/call"
 	notificationCancelled           = "notifications/cancelled"
 	methodComplete                  = "completion/complete"
+	methodDiscover                  = "server/discover"
 	methodCreateMessage             = "sampling/createMessage"
 	methodElicit                    = "elicitation/create"
 	notificationElicitationComplete = "notifications/elicitation/complete"
@@ -2076,4 +2102,17 @@ const (
 	MetaKeyClientInfo = "io.modelcontextprotocol/clientInfo"
 	// MetaKeyClientCapabilities carries the client's [ClientCapabilities].
 	MetaKeyClientCapabilities = "io.modelcontextprotocol/clientCapabilities"
+	// MetaKeyLogLevel identifies the desired log level for the request.
+	MetaKeyLogLevel = "io.modelcontextprotocol/logLevel"
 )
+
+// UnsupportedProtocolVersionData is the SEP-2575 payload carried in the
+// `data` field of a JSON-RPC error response with code
+// [CodeUnsupportedProtocolVersion]. The server uses it to advertise which
+// versions it supports so the client can pick a mutually supported one.
+type UnsupportedProtocolVersionData struct {
+	// Supported is the list of protocol versions the server supports.
+	Supported []string `json:"supported"`
+	// Requested is the protocol version the client asked for.
+	Requested string `json:"requested"`
+}
